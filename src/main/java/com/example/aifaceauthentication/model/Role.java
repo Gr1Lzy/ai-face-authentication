@@ -1,4 +1,4 @@
-package com.example.aifaceauthentication.entity;
+package com.example.aifaceauthentication.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,11 +20,11 @@ public class Role implements GrantedAuthority {
 
     @Column(nullable = false, unique = true)
     @Enumerated(EnumType.STRING)
-    private RoleName roleName;
+    private RoleName name;
 
     @Override
     public String getAuthority() {
-        return roleName.name();
+        return name.name();
     }
 
     public enum RoleName {

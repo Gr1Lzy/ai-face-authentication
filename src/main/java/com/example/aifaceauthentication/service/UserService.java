@@ -1,7 +1,7 @@
 package com.example.aifaceauthentication.service;
 
 import com.example.aifaceauthentication.dto.user.UserUpdateDto;
-import com.example.aifaceauthentication.entity.User;
+import com.example.aifaceauthentication.model.User;
 
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package com.example.aifaceauthentication.entity;
+package com.example.aifaceauthentication.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
