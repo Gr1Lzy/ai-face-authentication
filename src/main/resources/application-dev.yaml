@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: ai-face-authentication
+  datasource:
+    url: jdbc:h2:mem:testDb
+    username: admin
+    password: root
+    driver-class-name: org.h2.Driver
+jwt:
+  secret: A3xY6Gd2P9eVb7C8mW2nR4jY8XzQ1L0pA3xY6Gd2P9eVb7C8mW2nR4jY8XzQ1L0p #${JWT_SECRET_KEY}
+  expiration: 604800000 #${JWT_EXPIRATION_TIME}
+server:
+  port: 8081

@@ -3,11 +3,9 @@ package com.example.aifaceauthentication.service;
 import com.example.aifaceauthentication.dto.user.UserUpdateDto;
 import com.example.aifaceauthentication.model.User;
 
-import java.util.Optional;
-
 public interface UserService {
-    User findById(Long id);
-    Optional<User> findByEmail(String email);
+    void findById(Long id);
+    User findByEmail(String email);
     User update(UserUpdateDto userUpdateDto);
     void deleteById(Long id);
 }
