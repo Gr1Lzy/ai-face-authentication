@@ -21,11 +21,9 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String email;
-
-    private String username;
-
+    private String name;
+    private String surname;
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -40,5 +38,10 @@ public class User implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
     }
 }
