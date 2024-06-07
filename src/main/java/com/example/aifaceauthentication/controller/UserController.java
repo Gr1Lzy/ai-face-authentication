@@ -4,19 +4,15 @@ import com.example.aifaceauthentication.dto.user.UserLoginRequestDto;
 import com.example.aifaceauthentication.dto.user.UserLoginResponseDto;
 import com.example.aifaceauthentication.dto.user.UserRegisterRequestDto;
 import com.example.aifaceauthentication.dto.user.UserResponseDto;
-import com.example.aifaceauthentication.exception.RegistrationException;
 import com.example.aifaceauthentication.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,30 +23,24 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> register(@Validated @RequestBody UserRegisterRequestDto requestDto) {
-        logger.info("Received registration request for email: {}", requestDto.getEmail());
-        try {
-            UserResponseDto userResponseDto = authenticationService.register(requestDto);
-            logger.info("User registered successfully: {}", requestDto.getEmail());
-            return ResponseEntity.ok(userResponseDto);
-        } catch (RegistrationException e) {
-            logger.error("Registration failed for email: {}", requestDto.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (Exception e) {
-            logger.error("Unexpected error during registration for email: {}", requestDto.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        logger.info("Received register request: {}", requestDto);
+
+        UserResponseDto userResponseDto = authenticationService.register(requestDto);
+        return ResponseEntity.ok(userResponseDto);
     }
 
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDto> authenticate(@Validated @RequestBody UserLoginRequestDto requestDto) {
-        logger.info("Received login request for email: {}", requestDto.getEmail());
-        try {
-            UserLoginResponseDto userLoginResponseDto = authenticationService.login(requestDto);
-            logger.info("User logged in successfully: {}", requestDto.getEmail());
-            return ResponseEntity.ok(userLoginResponseDto);
-        } catch (Exception e) {
-            logger.error("Login failed for email: {}", requestDto.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-        }
+        UserLoginResponseDto userLoginResponseDto = authenticationService.login(requestDto);
+        return ResponseEntity.ok(userLoginResponseDto);
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<UserResponseDto> getUserDetails() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        UserResponseDto userResponseDto = authenticationService.getUserByEmail(email);
+        return ResponseEntity.ok(userResponseDto);
     }
 }
+

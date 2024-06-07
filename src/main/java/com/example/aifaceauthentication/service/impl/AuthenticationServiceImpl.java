@@ -12,6 +12,7 @@ import com.example.aifaceauthentication.repository.RoleRepository;
 import com.example.aifaceauthentication.repository.UserRepository;
 import com.example.aifaceauthentication.security.JwtTokenProvider;
 import com.example.aifaceauthentication.service.AuthenticationService;
+import com.example.aifaceauthentication.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,6 +32,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
     private final RoleRepository roleRepository;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -60,5 +62,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         String token = jwtTokenProvider.generateToken(authentication.getName());
         return new UserLoginResponseDto(token);
+    }
+
+    @Override
+    public UserResponseDto getUserByEmail(String email) {
+        User user = userService.findByEmail(email);
+        return userMapper.toDto(user);
     }
 }

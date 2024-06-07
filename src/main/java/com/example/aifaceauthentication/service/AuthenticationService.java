@@ -8,4 +8,5 @@ import com.example.aifaceauthentication.dto.user.UserResponseDto;
 public interface AuthenticationService {
     UserResponseDto register(UserRegisterRequestDto requestDto);
     UserLoginResponseDto login(UserLoginRequestDto requestDto);
+    UserResponseDto getUserByEmail(String email);
 }

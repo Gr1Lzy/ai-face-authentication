@@ -19,8 +19,8 @@ public class UserRegisterRequestDto {
     private String password;
     @NotBlank
     private String repeatPassword;
-    @NotBlank
-    private String name;
-    @NotBlank
-    private String surname;
+    private String firstName;
+
+    private String lastName;
+
 }
