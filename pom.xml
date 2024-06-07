@@ -126,12 +126,28 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- OpenCV dependency -->
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+            <version>4.5.1-2</version>
+        </dependency>
+
+        <!-- TensorFlow for FaceNet -->
+        <dependency>
+            <groupId>org.tensorflow</groupId>
+            <artifactId>tensorflow</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>1.0.0-M2.1</version>
         </dependency>
     </dependencies>
+
+
 
 
     <build>
