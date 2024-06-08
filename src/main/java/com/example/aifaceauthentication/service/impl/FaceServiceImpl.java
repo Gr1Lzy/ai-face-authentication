@@ -1,9 +1,12 @@
 package com.example.aifaceauthentication.service.impl;
 
 import com.example.aifaceauthentication.model.Face;
+import com.example.aifaceauthentication.model.User;
 import com.example.aifaceauthentication.repository.FaceRepository;
+import com.example.aifaceauthentication.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
@@ -11,6 +14,7 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.tensorflow.Graph;
@@ -23,13 +27,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class FaceServiceImpl {
+
+    private final UserRepository userRepository;
     private final FaceRepository faceRepository;
 
     private CascadeClassifier faceDetector;
@@ -38,10 +42,8 @@ public class FaceServiceImpl {
     @PostConstruct
     public void init() throws IOException {
         nu.pattern.OpenCV.loadLocally();
-        faceDetector = new CascadeClassifier("src/main/resources/etc/lbpcascade_frontalface_improved.xml");
-
-        Path modelPath = Paths.get("src/main/resources/etc/20180402-114759.pb");
-        faceNetGraphDef = Files.readAllBytes(modelPath);
+        faceDetector = new CascadeClassifier(new ClassPathResource("etc/lbpcascade_frontalface_improved.xml").getFile().getAbsolutePath());
+        faceNetGraphDef = Files.readAllBytes(new ClassPathResource("etc/20180402-114759.pb").getFile().toPath());
     }
 
     public Mat detectFace(MultipartFile photo) throws IOException {
@@ -50,13 +52,22 @@ public class FaceServiceImpl {
         faceDetector.detectMultiScale(img, faceDetections);
 
         for (Rect rect : faceDetections.toArray()) {
-            Mat face = new Mat(img, rect);
-            return face;
+            return new Mat(img, rect);
         }
         return null;
     }
 
     public byte[] getEmbedding(Mat photo) {
+        // Convert to RGB if needed
+        if (photo.channels() == 1) {
+            Imgproc.cvtColor(photo, photo, Imgproc.COLOR_GRAY2RGB);
+        } else if (photo.channels() == 4) {
+            Imgproc.cvtColor(photo, photo, Imgproc.COLOR_BGRA2BGR);
+        }
+
+        // Convert the image to CV_32F
+        photo.convertTo(photo, CvType.CV_32F);
+
         try (Graph graph = new Graph()) {
             graph.importGraphDef(faceNetGraphDef);
             try (Session session = new Session(graph)) {
@@ -65,30 +76,29 @@ public class FaceServiceImpl {
 
                 List<Tensor<?>> outputs = session.runner()
                         .feed("input", inputTensor)
+                        .feed("phase_train", Tensor.create(false))
                         .fetch("embeddings")
                         .run();
 
-                float[] embedding = new float[512];
-                outputs.get(0).copyTo(embedding);
+                float[][] embeddings = new float[1][512];
+                outputs.get(0).copyTo(embeddings);
 
-                // Convert float[] to byte[]
-                byte[] embeddingBytes = new byte[embedding.length * Float.BYTES];
-                ByteBuffer byteBuffer = ByteBuffer.allocate(embedding.length * Float.BYTES);
-                byteBuffer.asFloatBuffer().put(embedding);
-                byteBuffer.get(embeddingBytes);
-
-                return embeddingBytes;
+                ByteBuffer byteBuffer = ByteBuffer.allocate(embeddings[0].length * Float.BYTES);
+                byteBuffer.asFloatBuffer().put(embeddings[0]);
+                return byteBuffer.array();
             }
         }
     }
 
-    public boolean registerFace(MultipartFile photo, Long userId) throws IOException {
+    public boolean registerUserAndFace(User user, MultipartFile photo) throws IOException {
         Mat face = detectFace(photo);
         if (face != null) {
             byte[] embedding = getEmbedding(face);
             Face faceEntity = new Face();
-            faceEntity.setUserId(userId);
+            faceEntity.setUser(user);
             faceEntity.setFaceEmbedding(embedding);
+
+            userRepository.save(user);
             faceRepository.save(faceEntity);
             return true;
         }
@@ -102,14 +112,14 @@ public class FaceServiceImpl {
             List<Face> allFaces = faceRepository.findAll();
             for (Face faceEntity : allFaces) {
                 if (compareEmbedding(currentEmbedding, faceEntity.getFaceEmbedding())) {
-                    return faceEntity.getUserId();
+                    return faceEntity.getUser().getId();
                 }
             }
         }
         return null;
     }
 
-    private boolean compareEmbedding(byte[] face1, byte[] face2) {
+    public boolean compareEmbedding(byte[] face1, byte[] face2) {
         float[] embedding1 = new float[face1.length / Float.BYTES];
         float[] embedding2 = new float[face2.length / Float.BYTES];
 
@@ -124,15 +134,18 @@ public class FaceServiceImpl {
             normA += Math.pow(embedding1[i], 2);
             normB += Math.pow(embedding2[i], 2);
         }
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB)) > 0.9;
+
+        double similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+        System.out.println("Similarity score: " + similarity);
+
+        return similarity > 0.6;
     }
 
     private Mat convertMultipartFileToMat(MultipartFile file) throws IOException {
-        File convFile = new File(file.getOriginalFilename());
-        FileOutputStream fos = new FileOutputStream(convFile);
-        fos.write(file.getBytes());
-        fos.close();
-
+        File convFile = new File(System.getProperty("java.io.tmpdir") + System.currentTimeMillis());
+        try (FileOutputStream fos = new FileOutputStream(convFile)) {
+            fos.write(file.getBytes());
+        }
         return Imgcodecs.imread(convFile.getAbsolutePath());
     }
 

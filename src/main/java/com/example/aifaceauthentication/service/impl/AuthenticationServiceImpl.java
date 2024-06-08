@@ -73,25 +73,30 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return new UserLoginResponseDto(token);
     }
 
-    @Override
-    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
-        try {
-            Long userId = faceService.loginWithFace(photo);
-            if (userId != null) {
-                User user = userRepository.findById(userId).orElseThrow(
-                        () -> new RuntimeException("User not found"));
-                String token = jwtTokenProvider.generateToken(user.getEmail());
-                return new UserLoginResponseDto(token);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Face login failed", e);
-        }
-        throw new RuntimeException("Face login failed");
-    }
+//    @Override
+//    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
+//        try {
+//            Long userId = faceService.loginWithFace(photo);
+//            if (userId != null) {
+//                User user = userRepository.findById(userId).orElseThrow(
+//                        () -> new RuntimeException("User not found"));
+//                String token = jwtTokenProvider.generateToken(user.getEmail());
+//                return new UserLoginResponseDto(token);
+//            }
+//        } catch (IOException e) {
+//            throw new RuntimeException("Face login failed", e);
+//        }
+//        throw new RuntimeException("Face login failed");
+//    }
 
     @Override
     public UserResponseDto getUserByEmail(String email) {
         User user = userService.findByEmail(email);
         return userMapper.toDto(user);
+    }
+
+    @Override
+    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
+        return null;
     }
 }
