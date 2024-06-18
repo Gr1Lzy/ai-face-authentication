@@ -4,6 +4,7 @@ import com.example.aifaceauthentication.dto.user.UserLoginRequestDto;
 import com.example.aifaceauthentication.dto.user.UserLoginResponseDto;
 import com.example.aifaceauthentication.dto.user.UserRegisterRequestDto;
 import com.example.aifaceauthentication.dto.user.UserResponseDto;
+import com.example.aifaceauthentication.exception.FaceLoginException;
 import com.example.aifaceauthentication.exception.RegistrationException;
 import com.example.aifaceauthentication.mapper.UserMapper;
 import com.example.aifaceauthentication.model.Role;
@@ -50,7 +51,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Role userRole = roleRepository.findByName(Role.RoleName.ROLE_USER).orElseThrow(
                 () -> new RuntimeException("Cannot find a role " + Role.RoleName.ROLE_USER));
-        user.setRoles(new HashSet<>(Set.of(userRole)));  // Use HashSet to avoid immutability issues
+        user.setRoles(new HashSet<>(Set.of(userRole)));
 
         User savedUser = userRepository.save(user);
 
@@ -83,9 +84,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 return new UserLoginResponseDto(token);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Face login failed", e);
+            throw new FaceLoginException("An error occurred while processing the photo", e);
         }
-        throw new RuntimeException("Face login failed");
+        throw new FaceLoginException("No matching face found for login");
     }
 
     @Override
@@ -94,3 +95,5 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return userMapper.toDto(user);
     }
 }
+
+
