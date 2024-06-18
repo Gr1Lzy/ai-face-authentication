@@ -15,7 +15,24 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: name
-                  type: enum('ROLE_USER', 'ROLE_ADMIN')
+                  type: varchar(255)
                   constraints:
                     nullable: false
                     unique: true
+
+  - changeSet:
+      id: insert-roles-table
+      author: Andrew Kolomoiets
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_USER"
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_ADMIN"

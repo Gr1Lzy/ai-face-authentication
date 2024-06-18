@@ -6,9 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-@Entity
 @Getter
 @Setter
+@Entity
 @ToString
 @RequiredArgsConstructor
 @Table(name = "faces")
@@ -17,10 +17,12 @@ public class Face {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @Lob
+    @Column(name = "face_embedding", nullable = false)
+    private byte[] faceEmbedding;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-    private byte[] faceEmbedding;
 }
 

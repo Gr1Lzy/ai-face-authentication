@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 @Service
@@ -49,13 +50,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         Role userRole = roleRepository.findByName(Role.RoleName.ROLE_USER).orElseThrow(
                 () -> new RuntimeException("Cannot find a role " + Role.RoleName.ROLE_USER));
-        userRole.setName(Role.RoleName.ROLE_USER);
-        user.setRoles(Set.of(userRole));
+        user.setRoles(new HashSet<>(Set.of(userRole)));  // Use HashSet to avoid immutability issues
 
         User savedUser = userRepository.save(user);
 
-        // Register face photo
-        boolean isFaceRegistered = faceService.registerFace(photo, savedUser.getId());
+        boolean isFaceRegistered = faceService.registerUserAndFace(savedUser, photo);
         if (!isFaceRegistered) {
             throw new RegistrationException("Face registration failed");
         }
@@ -73,30 +72,25 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return new UserLoginResponseDto(token);
     }
 
-//    @Override
-//    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
-//        try {
-//            Long userId = faceService.loginWithFace(photo);
-//            if (userId != null) {
-//                User user = userRepository.findById(userId).orElseThrow(
-//                        () -> new RuntimeException("User not found"));
-//                String token = jwtTokenProvider.generateToken(user.getEmail());
-//                return new UserLoginResponseDto(token);
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException("Face login failed", e);
-//        }
-//        throw new RuntimeException("Face login failed");
-//    }
+    @Override
+    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
+        try {
+            Long userId = faceService.loginWithFace(photo);
+            if (userId != null) {
+                User user = userRepository.findById(userId).orElseThrow(
+                        () -> new RuntimeException("User not found"));
+                String token = jwtTokenProvider.generateToken(user.getEmail());
+                return new UserLoginResponseDto(token);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Face login failed", e);
+        }
+        throw new RuntimeException("Face login failed");
+    }
 
     @Override
     public UserResponseDto getUserByEmail(String email) {
         User user = userService.findByEmail(email);
         return userMapper.toDto(user);
-    }
-
-    @Override
-    public UserLoginResponseDto loginByPhoto(MultipartFile photo) {
-        return null;
     }
 }

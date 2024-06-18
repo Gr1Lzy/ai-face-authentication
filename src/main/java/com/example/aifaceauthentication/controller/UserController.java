@@ -23,8 +23,9 @@ public class UserController {
     private final AuthenticationService authenticationService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDto> register(@Validated @RequestBody UserRegisterRequestDto requestDto,
-                                                    @RequestParam MultipartFile photo) throws IOException {
+    public ResponseEntity<UserResponseDto> register(
+            @RequestPart("user") @Validated UserRegisterRequestDto requestDto,
+            @RequestPart("photo") MultipartFile photo) throws IOException {
         UserResponseDto userResponseDto = authenticationService.register(requestDto, photo);
         return ResponseEntity.ok(userResponseDto);
     }
@@ -36,7 +37,7 @@ public class UserController {
     }
 
     @PostMapping("/login/photo")
-    public ResponseEntity<UserLoginResponseDto> authenticateByPhoto(@RequestParam MultipartFile photo) {
+    public ResponseEntity<UserLoginResponseDto> authenticateByPhoto(@RequestPart("photo") MultipartFile photo) {
         UserLoginResponseDto userLoginResponseDto = authenticationService.loginByPhoto(photo);
         return ResponseEntity.ok(userLoginResponseDto);
     }
@@ -49,6 +50,3 @@ public class UserController {
         return ResponseEntity.ok(userResponseDto);
     }
 }
-
-
-

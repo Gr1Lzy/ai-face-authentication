@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: create-user-table
+      id: create-users-table
       author: Andrew Kolomoiets
       changes:
         - createTable:
@@ -31,6 +31,6 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: last_name
-                  type: varchar(255)
+                  type: VARCHAR(255)
                   constraints:
                     nullable: false

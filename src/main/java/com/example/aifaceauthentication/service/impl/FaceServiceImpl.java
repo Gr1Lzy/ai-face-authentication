@@ -5,12 +5,10 @@ import com.example.aifaceauthentication.model.User;
 import com.example.aifaceauthentication.repository.FaceRepository;
 import com.example.aifaceauthentication.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Size;
+import nu.pattern.OpenCV;
+import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
@@ -41,7 +39,7 @@ public class FaceServiceImpl {
 
     @PostConstruct
     public void init() throws IOException {
-        nu.pattern.OpenCV.loadLocally();
+        OpenCV.loadLocally();
         faceDetector = new CascadeClassifier(new ClassPathResource("etc/lbpcascade_frontalface_improved.xml").getFile().getAbsolutePath());
         faceNetGraphDef = Files.readAllBytes(new ClassPathResource("etc/20180402-114759.pb").getFile().toPath());
     }
@@ -58,14 +56,12 @@ public class FaceServiceImpl {
     }
 
     public byte[] getEmbedding(Mat photo) {
-        // Convert to RGB if needed
         if (photo.channels() == 1) {
             Imgproc.cvtColor(photo, photo, Imgproc.COLOR_GRAY2RGB);
         } else if (photo.channels() == 4) {
             Imgproc.cvtColor(photo, photo, Imgproc.COLOR_BGRA2BGR);
         }
 
-        // Convert the image to CV_32F
         photo.convertTo(photo, CvType.CV_32F);
 
         try (Graph graph = new Graph()) {
@@ -90,25 +86,32 @@ public class FaceServiceImpl {
         }
     }
 
-    public boolean registerUserAndFace(User user, MultipartFile photo) throws IOException {
-        Mat face = detectFace(photo);
-        if (face != null) {
-            byte[] embedding = getEmbedding(face);
-            Face faceEntity = new Face();
-            faceEntity.setUser(user);
-            faceEntity.setFaceEmbedding(embedding);
+    @Transactional
+    public boolean registerUserAndFace(User user, MultipartFile photo) {
+        try {
+            Mat detectedFace = detectFace(photo);
+            if (detectedFace == null) {
+                return false;
+            }
 
-            userRepository.save(user);
-            faceRepository.save(faceEntity);
+            byte[] embedding = getEmbedding(detectedFace);
+
+            Face face = new Face();
+            face.setUser(user);
+            face.setFaceEmbedding(embedding);
+
+            faceRepository.save(face);
             return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     public Long loginWithFace(MultipartFile photo) throws IOException {
-        Mat face = detectFace(photo);
-        if (face != null) {
-            byte[] currentEmbedding = getEmbedding(face);
+        Mat detectedFace = detectFace(photo);
+        if (detectedFace != null) {
+            byte[] currentEmbedding = getEmbedding(detectedFace);
             List<Face> allFaces = faceRepository.findAll();
             for (Face faceEntity : allFaces) {
                 if (compareEmbedding(currentEmbedding, faceEntity.getFaceEmbedding())) {
